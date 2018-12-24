@@ -189,7 +189,7 @@
 				TargetAttributes = {
 					FA00A6AD1CD54552005CF485 = {
 						CreatedOnToolsVersion = 7.3;
-						DevelopmentTeam = BVF7C6H94K;
+						DevelopmentTeam = Q63PHYLCEW;
 						LastSwiftMigration = 0900;
 					};
 					FABC1DEF1D4636D500F0B64B = {
@@ -399,9 +399,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = BVF7C6H94K;
+				DEVELOPMENT_TEAM = Q63PHYLCEW;
 				INFOPLIST_FILE = MetalRenderCamera/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oldyellowbricks.MetalRenderCamera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -415,9 +415,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = BVF7C6H94K;
+				DEVELOPMENT_TEAM = Q63PHYLCEW;
 				INFOPLIST_FILE = MetalRenderCamera/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oldyellowbricks.MetalRenderCamera;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -11,8 +11,10 @@ import Metal
 
 #if arch(i386) || arch(x86_64)
 #else
-    import MetalKit
+import MetalKit
 #endif
+
+let sizeInt32 = MemoryLayout<Int32>.stride
 
 /**
  * A `UIViewController` that allows quick and easy rendering of Metal textures. Currently only supports textures from single-plane pixel buffers, e.g. it can only render a single RGB texture and won't be able to render multiple YCbCr textures. Although this functionality can be added by overriding `MTKViewController`'s `willRenderTexture` method.
@@ -48,16 +50,16 @@ open class MTKViewController: UIViewController {
          * Override if neccessary
          */
     }
-
+    
     // MARK: - Public overrides
     
     override open func loadView() {
         super.loadView()
-#if arch(i386) || arch(x86_64)
+        #if arch(i386) || arch(x86_64)
         NSLog("Failed creating a default system Metal device, since Metal is not available on iOS Simulator.")
-#else
+        #else
         assert(device != nil, "Failed creating a default system Metal device. Please, make sure Metal is available on your hardware.")
-#endif
+        #endif
         initializeMetalView()
         initializeRenderPipelineState()
     }
@@ -69,8 +71,8 @@ open class MTKViewController: UIViewController {
      
      */
     fileprivate func initializeMetalView() {
-#if arch(i386) || arch(x86_64)
-#else
+        #if arch(i386) || arch(x86_64)
+        #else
         metalView = MTKView(frame: view.bounds, device: device)
         metalView.delegate = self
         metalView.framebufferOnly = true
@@ -78,29 +80,33 @@ open class MTKViewController: UIViewController {
         metalView.contentScaleFactor = UIScreen.main.scale
         metalView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.insertSubview(metalView, at: 0)
-#endif
+        #endif
     }
-
-#if arch(i386) || arch(x86_64)
-#else
+    
+    #if arch(i386) || arch(x86_64)
+    #else
     /// `UIViewController`'s view
     internal var metalView: MTKView!
-#endif
-
+    #endif
+    
     /// Metal device
     internal var device = MTLCreateSystemDefaultDevice()
-
+    
+    internal var clinkCornerResults = [Int32](repeating:0, count: 100)
+    
+    internal var clinkCornerBuffer: MTLBuffer?
+    
     /// Metal device command queue
     lazy internal var commandQueue: MTLCommandQueue? = {
         return device?.makeCommandQueue()
     }()
-
+    
     /// Metal pipeline state we use for rendering
     internal var renderPipelineState: MTLRenderPipelineState?
-
+    
     /// A semaphore we use to syncronize drawing code.
     fileprivate let semaphore = DispatchSemaphore(value: 1)
-
+    
     /**
      initializes render pipeline state with a default vertex function mapping texture to the view's frame and a simple fragment function returning texture pixel's value.
      */
@@ -108,7 +114,7 @@ open class MTKViewController: UIViewController {
         guard
             let device = device,
             let library = device.makeDefaultLibrary()
-        else { return }
+            else { return }
         
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.sampleCount = 1
@@ -123,6 +129,7 @@ open class MTKViewController: UIViewController {
          *  Fragment function to display texture's pixels in the area bounded by vertices of `mapTexture` shader
          */
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "displayTexture")
+        
         
         do {
             try renderPipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
@@ -145,17 +152,21 @@ extension MTKViewController: MTKViewDelegate {
     
     public func draw(in: MTKView) {
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-
+        
         autoreleasepool {
             guard
                 var texture = texture,
                 let device = device,
                 let commandBuffer = commandQueue?.makeCommandBuffer()
-            else {
-                _ = semaphore.signal()
-                return
+                else {
+                    _ = semaphore.signal()
+                    return
             }
-
+            
+            clinkCornerBuffer = device.makeBuffer(bytes: &clinkCornerResults,
+                                                  length: 100 * sizeInt32,
+                                                  options: .storageModeShared)
+            
             willRenderTexture(&texture, withCommandBuffer: commandBuffer, device: device)
             render(texture: texture, withCommandBuffer: commandBuffer, device: device)
         }
@@ -173,14 +184,15 @@ extension MTKViewController: MTKViewDelegate {
             let currentDrawable = metalView.currentDrawable,
             let renderPipelineState = renderPipelineState,
             let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: currentRenderPassDescriptor)
-        else {
-            semaphore.signal()
-            return
+            else {
+                semaphore.signal()
+                return
         }
         
         encoder.pushDebugGroup("RenderFrame")
         encoder.setRenderPipelineState(renderPipelineState)
         encoder.setFragmentTexture(texture, index: 0)
+        encoder.setFragmentBuffer(clinkCornerBuffer, offset: 0, index: 0)
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: 1)
         encoder.popDebugGroup()
         encoder.endEncoding()
@@ -193,6 +205,10 @@ extension MTKViewController: MTKViewDelegate {
         }
         commandBuffer.present(currentDrawable)
         commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        let data = clinkCornerBuffer?.contents().bindMemory(to: Int32.self, capacity: 100)
+        print("\nclink pixels: \(data![1])\n")
     }
 }
 
