@@ -179,6 +179,9 @@ extension MTKViewController: MTKViewDelegate {
      - parameter commandBuffer: Command buffer we will use for drawing
      */
     private func render(texture: MTLTexture, withCommandBuffer commandBuffer: MTLCommandBuffer, device: MTLDevice) {
+        
+        let t0 = CFAbsoluteTimeGetCurrent()
+        
         guard
             let currentRenderPassDescriptor = metalView.currentRenderPassDescriptor,
             let currentDrawable = metalView.currentDrawable,
@@ -208,7 +211,8 @@ extension MTKViewController: MTKViewDelegate {
         commandBuffer.waitUntilCompleted()
         
         let data = clinkCornerBuffer?.contents().bindMemory(to: Int32.self, capacity: 100)
-        print("\nclink pixels: \(data![1])\n")
+        let t1 = CFAbsoluteTimeGetCurrent()
+        print("\nclink pixels: \(data![1])    \(t1-t0)secs\n")
     }
 }
 
