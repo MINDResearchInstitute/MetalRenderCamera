@@ -280,7 +280,7 @@ extension MTKViewController: MTKViewDelegate {
         
         let data = clinkCornerBuffer?.contents().bindMemory(to: Int32.self, capacity: 100)
         let t1 = CFAbsoluteTimeGetCurrent()
-        print("\ncompute pixels: \(data![1])    \(t1-t0)secs\n")
+        print("\nclink pixels, CW: \(data![0]), CCW: \(data![1])    \(t1-t0)secs\n")
     }
 }
 

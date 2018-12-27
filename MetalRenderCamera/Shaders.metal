@@ -16,7 +16,7 @@ typedef struct {
 
 constant int NSAMPLES = 24;
 constant float ASPECT_RATIO = 1.7777777778;
-constant half OUTSIDE_LUM_SCALE = 0.99;
+constant half OUTSIDE_LUM_SCALE = 0.90;
 constant float RADIUS = 0.009;
 
 
@@ -93,12 +93,18 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
     half4 pixel =  half4(texture.sample(s, xy));
     half centerLum = getLum(pixel);
     bool isDarkCenter = true;
-    bool isClinkCorner = false;
+    bool isClinkCorner3 = false;
+    bool isClinkCorner4 = false;
+    int numClockwiseTransitions = 0;
     float2 pt;
     half4 ptrgb;
+    float sinVal;
+    float cosVal;
     
     for(int i=0; i<NSAMPLES; i++){
-        pt = float2(RADIUS*cos(i*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*M_PI_F/NSAMPLES));
+        sinVal = sincos(i*M_PI_F/NSAMPLES,cosVal);
+        pt = float2(RADIUS*cosVal,ASPECT_RATIO*RADIUS*sinVal);
+        //pt = float2(RADIUS*cos(i*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*M_PI_F/NSAMPLES));
         ptrgb = half4(texture.sample(s, xy+pt));
         if(getLum(ptrgb)*OUTSIDE_LUM_SCALE < centerLum){
             isDarkCenter = false;
@@ -115,19 +121,23 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
         int redCount = 0;
         int blueCount = 0;
         int yellowCount = 0;
+        int otherCount = 0;
         int numTransitions = 0;
         int colorType = 0;
         int lastColorType = 0;
         int firstColorType = 0;
         
         for(int i=0; i<NSAMPLES; i++){
-            pt = float2(RADIUS*cos(i*2*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*2*M_PI_F/NSAMPLES));
+            sinVal = sincos(i*2*M_PI_F/NSAMPLES,cosVal);
+            pt = float2(RADIUS*cosVal,ASPECT_RATIO*RADIUS*sinVal);
+            //pt = float2(RADIUS*cos(i*2*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*2*M_PI_F/NSAMPLES));
             ptrgb = half4(texture.sample(s, xy+pt));
             colorType = getColorType(ptrgb);
             switch(colorType){
                 case RED: redCount++; break;
                 case BLUE: blueCount++; break;
                 case YELLOW: yellowCount++; break;
+                default: otherCount++;
             }
             if(colorType > 0){
                 if(lastColorType == 0){
@@ -135,23 +145,52 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
                 }
                 else if(colorType != lastColorType){
                     numTransitions++;
+                    switch(lastColorType){
+                        case RED: if(colorType==YELLOW){numClockwiseTransitions++;};break;
+                        case YELLOW: if(colorType==BLUE){numClockwiseTransitions++;};break;
+                        case BLUE: if(colorType==RED){numClockwiseTransitions++;};break;
+                    }
                 }
                 lastColorType = colorType;
             }
         }
         if(lastColorType != firstColorType){
             numTransitions++;
+            switch(lastColorType){
+                case RED: if(firstColorType==YELLOW){numClockwiseTransitions++;};break;
+                case YELLOW: if(firstColorType==BLUE){numClockwiseTransitions++;};break;
+                case BLUE: if(firstColorType==RED){numClockwiseTransitions++;};break;
+            }
+            
         }
-        isClinkCorner = numTransitions == 3 && redCount > 4 && blueCount > 4 && yellowCount > 4 && yellowCount < redCount && yellowCount < blueCount;
+        if(otherCount == 0 && redCount > 3 && blueCount > 3 && yellowCount > 3){
+            if(numTransitions == 3){
+                isClinkCorner3 = (yellowCount <= redCount || yellowCount <= blueCount);
+            }
+            else if(numTransitions == 4){
+                isClinkCorner4 = true;
+            }
+        }
+        //isClinkCorner3 = numTransitions == 3 && redCount > 4 && blueCount > 4 && yellowCount > 3 && yellowCount <= redCount && yellowCount <= blueCount;
     }
     
-    if(isClinkCorner){
-        outputTexture.write(half4(1,1,0,1.0), gid);
-        atomic_fetch_add_explicit(&clinkCornerCounter + 1, 1, memory_order_relaxed);
+    if(isClinkCorner3){
+        pixel = half4(1,1,0,1);
+        outputTexture.write(pixel*0.3,gid);
+        if(numClockwiseTransitions == 3){
+            atomic_fetch_add_explicit(&clinkCornerCounter, 1, memory_order_relaxed);
+        }
+        else{
+            atomic_fetch_add_explicit(&clinkCornerCounter + 1, 1, memory_order_relaxed);
+        }
+    }
+    else if(isClinkCorner4){
+        pixel = half4(0,1,1,1);
     }
     else{
-        outputTexture.write(pixel*0.3,gid);
+        pixel = pixel*0.3;
     }
+    outputTexture.write(pixel,gid);
 }
 
 
