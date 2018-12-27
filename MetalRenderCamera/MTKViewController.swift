@@ -62,6 +62,7 @@ open class MTKViewController: UIViewController {
         #endif
         initializeMetalView()
         initializeRenderPipelineState()
+        initializeComputePipelineState()
     }
     
     // MARK: - Private Metal-related properties and methods
@@ -104,6 +105,16 @@ open class MTKViewController: UIViewController {
     /// Metal pipeline state we use for rendering
     internal var renderPipelineState: MTLRenderPipelineState?
     
+    /// Metal pipeline state we use for computing
+    internal var computePipelineState: MTLComputePipelineState?
+    
+    // Texture object which serves as the output for our image processing
+    //    internal var outputTexture: MTLTexture?
+    
+    // Compute kernel dispatch parameters
+    internal var threadgroupSize: MTLSize = MTLSizeMake(256, 256, 1);
+    internal var threadgroupCount: MTLSize = MTLSizeMake(256, 256, 1);
+    
     /// A semaphore we use to syncronize drawing code.
     fileprivate let semaphore = DispatchSemaphore(value: 1)
     
@@ -136,6 +147,22 @@ open class MTKViewController: UIViewController {
         }
         catch {
             assertionFailure("Failed creating a render state pipeline. Can't render the texture without one.")
+            return
+        }
+    }
+    fileprivate func initializeComputePipelineState() {
+        guard
+            let device = device,
+            let library = device.makeDefaultLibrary()
+            else { return }
+        
+        let kernelFunction = library.makeFunction(name: "clinkCornerKernel")
+        
+        do {
+            try computePipelineState = device.makeComputePipelineState(function: kernelFunction!)
+        }
+        catch {
+            assertionFailure("Failed creating a compute state pipeline.")
             return
         }
     }
@@ -181,24 +208,65 @@ extension MTKViewController: MTKViewDelegate {
     private func render(texture: MTLTexture, withCommandBuffer commandBuffer: MTLCommandBuffer, device: MTLDevice) {
         
         let t0 = CFAbsoluteTimeGetCurrent()
-        
+
         guard
-            let currentRenderPassDescriptor = metalView.currentRenderPassDescriptor,
-            let currentDrawable = metalView.currentDrawable,
-            let renderPipelineState = renderPipelineState,
-            let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: currentRenderPassDescriptor)
+            let computePipelineState = computePipelineState,
+            let computeEncoder = commandBuffer.makeComputeCommandEncoder()
             else {
                 semaphore.signal()
                 return
         }
         
-        encoder.pushDebugGroup("RenderFrame")
-        encoder.setRenderPipelineState(renderPipelineState)
-        encoder.setFragmentTexture(texture, index: 0)
-        encoder.setFragmentBuffer(clinkCornerBuffer, offset: 0, index: 0)
-        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: 1)
-        encoder.popDebugGroup()
-        encoder.endEncoding()
+        // Calculate the number of rows and columns of threadgroups given the width of the input image
+        // Ensure that you cover the entire image (or more) so you process every pixel
+        threadgroupCount.width  = (texture.width  + threadgroupSize.width -  1) / threadgroupSize.width
+        threadgroupCount.height = (texture.height + threadgroupSize.height - 1) / threadgroupSize.height
+        
+        // Since we're only dealing with a 2D data set, set depth to 1
+        threadgroupCount.depth = 1
+        
+        let textureDescriptor = MTLTextureDescriptor.init()
+        
+        // Indicate we're creating a 2D texture.
+        textureDescriptor.textureType = MTLTextureType.type2D
+        
+        // Indicate that each pixel has a Red, Green, Blue and Alpha channel,
+        //    each in an 8 bit unnormalized value (0 maps 0.0 while 255 maps to 1.0)
+        textureDescriptor.pixelFormat = .rgba8Unorm_srgb
+        textureDescriptor.width = texture.width
+        textureDescriptor.height = texture.height
+        textureDescriptor.usage = MTLTextureUsage(rawValue: MTLTextureUsage.shaderWrite.rawValue | MTLTextureUsage.shaderRead.rawValue)
+        
+        let outputTexture = device.makeTexture(descriptor: textureDescriptor)
+        
+        computeEncoder.setComputePipelineState(computePipelineState)
+        computeEncoder.setTexture(texture,index:0)
+        computeEncoder.setTexture(outputTexture,index:1)
+        computeEncoder.setBuffer(clinkCornerBuffer, offset: 0, index: 0)
+        computeEncoder.dispatchThreadgroups(threadgroupSize, threadsPerThreadgroup: threadgroupCount)
+        computeEncoder.endEncoding()
+        
+        let renderOutput = true
+        if (renderOutput) {
+            guard
+                let currentRenderPassDescriptor = metalView.currentRenderPassDescriptor,
+                let currentDrawable = metalView.currentDrawable,
+                let renderPipelineState = renderPipelineState,
+                let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: currentRenderPassDescriptor)
+                else {
+                    semaphore.signal()
+                    return
+            }
+            
+            renderEncoder.pushDebugGroup("RenderFrame")
+            renderEncoder.setRenderPipelineState(renderPipelineState)
+            renderEncoder.setFragmentTexture(outputTexture, index: 0)
+            renderEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: 1)
+            renderEncoder.popDebugGroup()
+            renderEncoder.endEncoding()
+            
+            commandBuffer.present(currentDrawable)
+        }
         
         commandBuffer.addScheduledHandler { [weak self] (buffer) in
             guard let unwrappedSelf = self else { return }
@@ -206,13 +274,13 @@ extension MTKViewController: MTKViewDelegate {
             unwrappedSelf.didRenderTexture(texture, withCommandBuffer: buffer, device: device)
             unwrappedSelf.semaphore.signal()
         }
-        commandBuffer.present(currentDrawable)
+        
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         
         let data = clinkCornerBuffer?.contents().bindMemory(to: Int32.self, capacity: 100)
         let t1 = CFAbsoluteTimeGetCurrent()
-        print("\nclink pixels: \(data![1])    \(t1-t0)secs\n")
+        print("\ncompute pixels: \(data![1])    \(t1-t0)secs\n")
     }
 }
 

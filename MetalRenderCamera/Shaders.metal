@@ -65,11 +65,31 @@ vertex TextureMappingVertex mapTexture(unsigned int vertex_id [[ vertex_id ]]) {
 }
 
 fragment half4 displayTexture(  TextureMappingVertex mappingVertex [[ stage_in ]],
-                              texture2d<float, access::sample> texture [[ texture(0) ]],
-                              device atomic_int &clinkCornerCounter [[buffer(0)]]){
+                              texture2d<float, access::sample> texture [[ texture(0) ]]){
     constexpr sampler s(address::clamp_to_edge, filter::linear);
     
     float2 xy = mappingVertex.textureCoordinate;
+    half4 pixel =  half4(texture.sample(s, xy));
+    return pixel;
+}
+
+
+kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture(0) ]],
+                              texture2d<half, access::write> outputTexture [[texture(1)]],
+                              device atomic_int &clinkCornerCounter [[buffer(0)]],
+                              
+                              uint2 gid [[thread_position_in_grid]]){
+    
+    // Check if the pixel is within the bounds of the output texture
+    if((gid.x >= outputTexture.get_width()) || (gid.y >= outputTexture.get_height()))
+    {
+        // Return early if the pixel is out of bounds
+        return;
+    }
+    
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    
+    float2 xy = float2(float(gid.x)/float(outputTexture.get_width()),float(gid.y)/float(outputTexture.get_height()));
     half4 pixel =  half4(texture.sample(s, xy));
     half centerLum = getLum(pixel);
     bool isDarkCenter = true;
@@ -124,14 +144,14 @@ fragment half4 displayTexture(  TextureMappingVertex mappingVertex [[ stage_in ]
         }
         isClinkCorner = numTransitions == 3 && redCount > 4 && blueCount > 4 && yellowCount > 4 && yellowCount < redCount && yellowCount < blueCount;
     }
+    
     if(isClinkCorner){
-        pixel = half4(1,1,0,1);
+        outputTexture.write(half4(1,1,0,1.0), gid);
         atomic_fetch_add_explicit(&clinkCornerCounter + 1, 1, memory_order_relaxed);
     }
     else{
-        pixel = pixel*0.3;
+        outputTexture.write(pixel*0.3,gid);
     }
-    return pixel;
 }
 
 
