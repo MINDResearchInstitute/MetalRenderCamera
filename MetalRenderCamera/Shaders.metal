@@ -15,9 +15,8 @@ typedef struct {
 //constant half3 kRec709Luma = half3(0.2126, 0.7152, 0.0722);
 
 constant int NSAMPLES = 24;
-constant float ASPECT_RATIO = 1.7777777778;
 constant half OUTSIDE_LUM_SCALE = 0.90;
-constant float RADIUS = 0.009;
+constant float RADIUS = 10.0;
 
 
 constant uint RED = 1;
@@ -80,16 +79,8 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
                               
                               uint2 gid [[thread_position_in_grid]]){
     
-    // Check if the pixel is within the bounds of the output texture
-    if((gid.x >= outputTexture.get_width()) || (gid.y >= outputTexture.get_height()))
-    {
-        // Return early if the pixel is out of bounds
-        return;
-    }
-    
-    constexpr sampler s(address::clamp_to_edge, filter::linear);
-    
-    float2 xy = float2(float(gid.x)/float(outputTexture.get_width()),float(gid.y)/float(outputTexture.get_height()));
+    float2 xy = float2(gid);
+    constexpr sampler s(address::clamp_to_edge, filter::linear, coord::pixel);
     half4 pixel =  half4(texture.sample(s, xy));
     half centerLum = getLum(pixel);
     bool isDarkCenter = true;
@@ -103,8 +94,7 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
     
     for(int i=0; i<NSAMPLES; i++){
         sinVal = sincos(i*M_PI_F/NSAMPLES,cosVal);
-        pt = float2(RADIUS*cosVal,ASPECT_RATIO*RADIUS*sinVal);
-        //pt = float2(RADIUS*cos(i*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*M_PI_F/NSAMPLES));
+        pt = float2(RADIUS*cosVal,RADIUS*sinVal);
         ptrgb = half4(texture.sample(s, xy+pt));
         if(getLum(ptrgb)*OUTSIDE_LUM_SCALE < centerLum){
             isDarkCenter = false;
@@ -129,8 +119,7 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
         
         for(int i=0; i<NSAMPLES; i++){
             sinVal = sincos(i*2*M_PI_F/NSAMPLES,cosVal);
-            pt = float2(RADIUS*cosVal,ASPECT_RATIO*RADIUS*sinVal);
-            //pt = float2(RADIUS*cos(i*2*M_PI_F/NSAMPLES),ASPECT_RATIO*RADIUS*sin(i*2*M_PI_F/NSAMPLES));
+            pt = float2(RADIUS*cosVal,RADIUS*sinVal);
             ptrgb = half4(texture.sample(s, xy+pt));
             colorType = getColorType(ptrgb);
             switch(colorType){
