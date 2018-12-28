@@ -16,7 +16,7 @@ typedef struct {
 
 constant int NSAMPLES = 24;
 constant half OUTSIDE_LUM_SCALE = 0.90;
-constant float RADIUS = 10.0;
+constant float RADIUS = 12.0;
 
 
 constant uint RED = 1;
@@ -165,7 +165,7 @@ kernel void clinkCornerKernel(texture2d<half, access::sample> texture [[ texture
     
     if(isClinkCorner3){
         pixel = half4(1,1,0,1);
-        outputTexture.write(pixel*0.3,gid);
+        //outputTexture.write(pixel*0.3,gid);
         if(numClockwiseTransitions == 3){
             atomic_fetch_add_explicit(&clinkCornerCounter, 1, memory_order_relaxed);
         }

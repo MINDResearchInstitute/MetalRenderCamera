@@ -112,8 +112,8 @@ open class MTKViewController: UIViewController {
     //    internal var outputTexture: MTLTexture?
     
     // Compute kernel dispatch parameters
-    internal var threadgroupSize: MTLSize = MTLSizeMake(256, 256, 1);
-    internal var threadgroupCount: MTLSize = MTLSizeMake(256, 256, 1);
+    internal var threadgroupSize: MTLSize = MTLSizeMake(64, 64, 1);
+    internal var threadgroupCount: MTLSize = MTLSizeMake(64, 64, 1);
     
     /// A semaphore we use to syncronize drawing code.
     fileprivate let semaphore = DispatchSemaphore(value: 1)
