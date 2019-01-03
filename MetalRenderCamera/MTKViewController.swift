@@ -8,6 +8,7 @@
 
 import UIKit
 import Metal
+import AVFoundation
 
 #if arch(i386) || arch(x86_64)
 #else
@@ -24,6 +25,8 @@ open class MTKViewController: UIViewController {
     
     /// Metal texture to be drawn whenever the view controller is asked to render its view. Please note that if you set this `var` too frequently some of the textures may not being drawn, as setting a texture does not force the view controller's view to render its content.
     open var texture: MTLTexture?
+    
+    open var sampleBuffer: CMSampleBuffer?
     
     /**
      This method is called prior rendering view's content. Use `inout` `texture` parameter to update the texture that is about to be drawn.
@@ -208,7 +211,20 @@ extension MTKViewController: MTKViewDelegate {
     private func render(texture: MTLTexture, withCommandBuffer commandBuffer: MTLCommandBuffer, device: MTLDevice) {
         
         let t0 = CFAbsoluteTimeGetCurrent()
-
+        let imageBuffer = CMSampleBufferGetImageBuffer(self.sampleBuffer!)
+        CVPixelBufferLockBaseAddress(imageBuffer!,[])
+        
+        let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer!)
+        let width = CVPixelBufferGetWidth(imageBuffer!)
+        let height = CVPixelBufferGetHeight(imageBuffer!)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer!)
+        
+        let offset = 1000
+        let r = baseAddress!.load(fromByteOffset: offset+0, as: UInt8.self)
+        let g = baseAddress!.load(fromByteOffset: offset+1, as: UInt8.self)
+        let b = baseAddress!.load(fromByteOffset: offset+2, as: UInt8.self)
+        print("rgb ",r,g,b)
+        
         guard
             let computePipelineState = computePipelineState,
             let computeEncoder = commandBuffer.makeComputeCommandEncoder()

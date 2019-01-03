@@ -8,6 +8,7 @@
 
 import XCTest
 import Metal
+import AVFoundation
 
 @testable import Metal_Camera
 
@@ -20,7 +21,7 @@ internal final class ErrorTrackingDelegate: MetalCameraSessionDelegate {
     /// Expectation that is waiting for the delegate
     var expectation: XCTestExpectation?
 
-    internal func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double) { }
+    internal func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double, sampleBuffer: CMSampleBuffer) { }
 
     internal func metalCameraSession(_ session: MetalCameraSession, didUpdateState: MetalCameraSessionState, error newError: MetalCameraSessionError?) {
         guard let expectation = expectation, (error == nil && newError != nil) else { return }
@@ -39,7 +40,7 @@ internal final class StateTrackingDelegate: MetalCameraSessionDelegate {
     /// Expectation that is waiting for the delegate
     var expectation: XCTestExpectation?
 
-    internal func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double) { }
+    internal func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double, sampleBuffer: CMSampleBuffer) { }
 
     internal func metalCameraSession(_ session: MetalCameraSession, didUpdateState newState: MetalCameraSessionState, error: MetalCameraSessionError?) {
         guard let expectation = expectation, state == nil else { return }

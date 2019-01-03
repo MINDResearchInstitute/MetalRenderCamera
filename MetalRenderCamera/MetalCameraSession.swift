@@ -19,8 +19,9 @@ public protocol MetalCameraSessionDelegate {
      - parameter session:                   Session that triggered the update
      - parameter didReceiveFrameAsTextures: Frame converted to an array of Metal textures
      - parameter withTimestamp:             Frame timestamp in seconds
+     - parameter sampleBuffer:              Frame sample buffer
      */
-    func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double)
+    func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures: [MTLTexture], withTimestamp: Double, sampleBuffer:CMSampleBuffer)
     
     /**
      Camera session did update capture state
@@ -360,7 +361,7 @@ extension MetalCameraSession: AVCaptureVideoDataOutputSampleBufferDelegate {
             
             let timestamp = try self.timestamp(sampleBuffer: sampleBuffer)
             
-            delegate?.metalCameraSession(self, didReceiveFrameAsTextures: textures, withTimestamp: timestamp)
+            delegate?.metalCameraSession(self, didReceiveFrameAsTextures: textures, withTimestamp: timestamp, sampleBuffer:sampleBuffer)
         }
         catch let error as MetalCameraSessionError {
             self.handleError(error)

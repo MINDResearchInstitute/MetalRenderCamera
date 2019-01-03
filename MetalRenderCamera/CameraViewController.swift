@@ -8,6 +8,7 @@
 
 import UIKit
 import Metal
+import AVFoundation
 
 internal final class CameraViewController: MTKViewController {
     var session: MetalCameraSession?
@@ -30,8 +31,9 @@ internal final class CameraViewController: MTKViewController {
 
 // MARK: - MetalCameraSessionDelegate
 extension CameraViewController: MetalCameraSessionDelegate {
-    func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures textures: [MTLTexture], withTimestamp timestamp: Double) {
+    func metalCameraSession(_ session: MetalCameraSession, didReceiveFrameAsTextures textures: [MTLTexture], withTimestamp timestamp: Double, sampleBuffer sampleBuffer:CMSampleBuffer) {
         self.texture = textures[0]
+        self.sampleBuffer = sampleBuffer
     }
     
     func metalCameraSession(_ cameraSession: MetalCameraSession, didUpdateState state: MetalCameraSessionState, error: MetalCameraSessionError?) {
