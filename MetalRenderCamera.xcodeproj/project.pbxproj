@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7380318F21DFA729001AEEBC /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380318E21DFA729001AEEBC /* CoreGraphics.framework */; };
+		7380319121DFA732001AEEBC /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380319021DFA732001AEEBC /* CoreMedia.framework */; };
+		7380319321DFA738001AEEBC /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380319221DFA738001AEEBC /* CoreFoundation.framework */; };
+		7380319521DFA740001AEEBC /* AssetsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380319421DFA740001AEEBC /* AssetsLibrary.framework */; };
+		7380319721DFA74C001AEEBC /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380319621DFA74C001AEEBC /* Accelerate.framework */; };
+		7380319921DFA958001AEEBC /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7380319821DFA958001AEEBC /* opencv2.framework */; };
+		7380319C21DFAD2A001AEEBC /* Calib3D.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7380319B21DFAD2A001AEEBC /* Calib3D.mm */; };
 		FA00A6B21CD54552005CF485 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA00A6B11CD54552005CF485 /* AppDelegate.swift */; };
 		FA00A6B71CD54552005CF485 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA00A6B51CD54552005CF485 /* Main.storyboard */; };
 		FA00A6B91CD54552005CF485 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA00A6B81CD54552005CF485 /* Assets.xcassets */; };
@@ -32,6 +39,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7380318921DEF034001AEEBC /* Metal Camera-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Metal Camera-Bridging-Header.h"; sourceTree = "<group>"; };
+		7380318E21DFA729001AEEBC /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		7380319021DFA732001AEEBC /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		7380319221DFA738001AEEBC /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		7380319421DFA740001AEEBC /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
+		7380319621DFA74C001AEEBC /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		7380319821DFA958001AEEBC /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = "<group>"; };
+		7380319A21DFAD2A001AEEBC /* Calib3D.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Calib3D.h; sourceTree = "<group>"; };
+		7380319B21DFAD2A001AEEBC /* Calib3D.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Calib3D.mm; sourceTree = "<group>"; };
 		FA00A6AE1CD54552005CF485 /* Metal Camera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Metal Camera.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA00A6B11CD54552005CF485 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA00A6B61CD54552005CF485 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -55,6 +71,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7380319921DFA958001AEEBC /* opencv2.framework in Frameworks */,
+				7380319721DFA74C001AEEBC /* Accelerate.framework in Frameworks */,
+				7380319521DFA740001AEEBC /* AssetsLibrary.framework in Frameworks */,
+				7380319321DFA738001AEEBC /* CoreFoundation.framework in Frameworks */,
+				7380319121DFA732001AEEBC /* CoreMedia.framework in Frameworks */,
+				7380318F21DFA729001AEEBC /* CoreGraphics.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -68,12 +90,37 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7380318821DEF003001AEEBC /* OpenCV */ = {
+			isa = PBXGroup;
+			children = (
+				7380318921DEF034001AEEBC /* Metal Camera-Bridging-Header.h */,
+				7380319A21DFAD2A001AEEBC /* Calib3D.h */,
+				7380319B21DFAD2A001AEEBC /* Calib3D.mm */,
+			);
+			path = OpenCV;
+			sourceTree = "<group>";
+		};
+		7380318D21DFA6E8001AEEBC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7380319821DFA958001AEEBC /* opencv2.framework */,
+				7380319621DFA74C001AEEBC /* Accelerate.framework */,
+				7380319421DFA740001AEEBC /* AssetsLibrary.framework */,
+				7380319221DFA738001AEEBC /* CoreFoundation.framework */,
+				7380319021DFA732001AEEBC /* CoreMedia.framework */,
+				7380318E21DFA729001AEEBC /* CoreGraphics.framework */,
+			);
+			path = Frameworks;
+			sourceTree = "<group>";
+		};
 		FA00A6A51CD54552005CF485 = {
 			isa = PBXGroup;
 			children = (
+				7380318821DEF003001AEEBC /* OpenCV */,
 				FA00A6B01CD54552005CF485 /* MetalRenderCamera */,
 				FABC1DF11D4636D500F0B64B /* MetalRenderCameraTests */,
 				FA00A6AF1CD54552005CF485 /* Products */,
+				7380318D21DFA6E8001AEEBC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -190,7 +237,7 @@
 					FA00A6AD1CD54552005CF485 = {
 						CreatedOnToolsVersion = 7.3;
 						DevelopmentTeam = Q63PHYLCEW;
-						LastSwiftMigration = 0900;
+						LastSwiftMigration = 1010;
 					};
 					FABC1DEF1D4636D500F0B64B = {
 						CreatedOnToolsVersion = 7.3.1;
@@ -246,6 +293,7 @@
 				FABC1DE91D46296C00F0B64B /* MetalCameraCaptureDevice.swift in Sources */,
 				FA00A6CF1CD545F4005CF485 /* Shaders.metal in Sources */,
 				FA00A6CD1CD545F4005CF485 /* MetalCameraSessionTypes.swift in Sources */,
+				7380319C21DFAD2A001AEEBC /* Calib3D.mm in Sources */,
 				FA00A6B21CD54552005CF485 /* AppDelegate.swift in Sources */,
 				FA00A6CB1CD545F4005CF485 /* CameraViewController.swift in Sources */,
 				FA00A6CC1CD545F4005CF485 /* MetalCameraSession.swift in Sources */,
@@ -398,13 +446,21 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = Q63PHYLCEW;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MetalRenderCamera",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = MetalRenderCamera/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oldyellowbricks.MetalRenderCamera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenCV/Metal Camera-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
 			};
@@ -414,13 +470,20 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = Q63PHYLCEW;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MetalRenderCamera",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = MetalRenderCamera/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oldyellowbricks.MetalRenderCamera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenCV/Metal Camera-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
 			};

@@ -202,6 +202,18 @@ extension MTKViewController: MTKViewDelegate {
         }
     }
     
+    private func testOpenCV() {
+        print("\(Calib3D.openCVVersionString())")
+        
+        var src:[Double] = [ 0, 0, 0,
+                             1, -1, 1,
+                             0, -1,-1,
+                             2, 0, 1]
+        var dst:[Double] = [0,0,0,0,0,0,0,0]
+        Calib3D.convertPointsFromHomogeneous(withSrc:&src,dst:&dst)
+        print("dst",dst)
+    }
+    
     /**
      Renders texture into the `UIViewController`'s view.
      
@@ -224,6 +236,8 @@ extension MTKViewController: MTKViewDelegate {
         let g = baseAddress!.load(fromByteOffset: offset+1, as: UInt8.self)
         let b = baseAddress!.load(fromByteOffset: offset+2, as: UInt8.self)
         print("rgb ",r,g,b)
+
+        testOpenCV()
         
         guard
             let computePipelineState = computePipelineState,
