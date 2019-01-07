@@ -434,15 +434,6 @@ extension MTKViewController: MTKViewDelegate {
     private func render(texture: MTLTexture, withCommandBuffer commandBuffer: MTLCommandBuffer, device: MTLDevice) {
         
         let t0 = CFAbsoluteTimeGetCurrent()
-        let imageBuffer = CMSampleBufferGetImageBuffer(self.sampleBuffer!)
-        CVPixelBufferLockBaseAddress(imageBuffer!,[])
-        
-        let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer!)
-        //let width = CVPixelBufferGetWidth(imageBuffer!)
-        //let height = CVPixelBufferGetHeight(imageBuffer!)
-        //let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer!)
-        
-        //testOpenCV()
         
         guard
             let currentRenderPassDescriptor = metalView.currentRenderPassDescriptor,
@@ -482,6 +473,12 @@ extension MTKViewController: MTKViewDelegate {
          var pformat = texture.pixelFormat
          */
         
+        let imageBuffer = CMSampleBufferGetImageBuffer(self.sampleBuffer!)
+        CVPixelBufferLockBaseAddress(imageBuffer!,[])
+        let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer!)
+        
+        //testOpenCV()
+        
         hLine = Int32(0)
         vLine = Int32(0)
         
@@ -516,6 +513,7 @@ extension MTKViewController: MTKViewDelegate {
                 
             }
         }
+        CVPixelBufferUnlockBaseAddress(imageBuffer!,[])
         let t1 = CFAbsoluteTimeGetCurrent()
         print("\(t1-t0)secs\n")
     }
