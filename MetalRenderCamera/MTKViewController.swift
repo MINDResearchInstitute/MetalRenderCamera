@@ -171,6 +171,9 @@ struct ClinkCode{
             (topLeft, topRight, bottomRight, bottomLeft ) = ( bottomRight, bottomLeft, topLeft, topRight )
             projectionMatrix = buildClinkcodeProjectionMatrix(&self)
             code = self.readCode(pixelBufferBaseAddress)
+            guard code > 0 else{
+                return
+            }
         }
         centerXY = projectPoint(m:projectionMatrix, pt:(x:2.5, y:2.5))
         isValid = true
