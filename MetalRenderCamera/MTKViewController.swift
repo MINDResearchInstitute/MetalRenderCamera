@@ -19,6 +19,7 @@ import MetalKit
 let sizeInt32 = MemoryLayout<Int32>.stride
 let NUM_PIX_X = 1920
 let NUM_PIX_Y = 1080
+let BYTES_PER_ROW = 7680
 let GRID_RESOLUTION = 1
 var gridDivisionsX = 16*GRID_RESOLUTION
 var gridDivisionsY = 9*GRID_RESOLUTION
@@ -57,6 +58,27 @@ func isClinkcodeType(type: Int) -> Bool {
     default:
         return false
     }
+}
+
+func readRBGFromPixelBuffer( baseAddress:UnsafeRawPointer, xy:(x:Double, y:Double) ) -> (r:UInt8, g:UInt8, b:UInt8)? {
+    let x = Int(round(xy.x))
+    let y = Int(round(xy.y))
+    guard x >= 0 && x < NUM_PIX_X && y >= 0 && y < NUM_PIX_Y else{
+        return nil
+    }
+    let offset:Int = y*BYTES_PER_ROW + x*4
+    let r:UInt8 = baseAddress.load(fromByteOffset: offset+0, as: UInt8.self)
+    let g:UInt8 = baseAddress.load(fromByteOffset: offset+1, as: UInt8.self)
+    let b:UInt8 = baseAddress.load(fromByteOffset: offset+2, as: UInt8.self)
+    return (r:r,g:g,b:b)
+}
+
+func simpleHash(_ s:String ) -> Int {
+    var h = 0;
+    for c in s.utf8{
+        h = (31*h + Int(c)) & 0xffffffff;
+    }
+    return h
 }
 
 //Per-Cell Data Fields
@@ -120,18 +142,12 @@ struct ClinkCode{
     var bottomLeft:ExtractedTag
     var bottomRight:ExtractedTag
     
+    var isValid:Bool = false
     var projectionMatrix:[Double] = []
     var code:Int32 = 0
     var centerXY:(x:Double, y:Double) = (-1,-1)
-    //Also need:
-    //matrix transform
-    //location in 3D space
-    //?? How to specify a 3D location that doesn't get wacked when the coordinate system changes?
     
-    var hasBeenTested:Bool = false
-    var isValid:Bool = false
-    
-    init( cwPair:OppositeTagPair, ccwPair:OppositeTagPair ){
+    init( cwPair:OppositeTagPair, ccwPair:OppositeTagPair, pixelBufferBaseAddress:UnsafeRawPointer ){
         (topLeft, bottomRight) = (cwPair.tagA, cwPair.tagB)
         if(topLeft.y > bottomRight.y){
             (topLeft, bottomRight) = (bottomRight, topLeft) //swap assuming up is actually up
@@ -142,25 +158,94 @@ struct ClinkCode{
         if(errorToRight < errorToBottom){
             (bottomLeft, topRight) = (topRight, bottomLeft) //swap to align better
         }
-        
         projectionMatrix = buildClinkcodeProjectionMatrix(&self)
         guard !projectionMatrix.contains(where:{!$0.isFinite}) else{
-            hasBeenTested = true
-            isValid = false
             return
         }
+        code = self.readCode(pixelBufferBaseAddress)
+        guard code != 0 else{
+            return
+        }
+        if(code == -1){
+            //rotate by 180 degrees
+            (topLeft, topRight, bottomRight, bottomLeft ) = ( bottomRight, bottomLeft, topLeft, topRight )
+            projectionMatrix = buildClinkcodeProjectionMatrix(&self)
+            code = self.readCode(pixelBufferBaseAddress)
+        }
+        centerXY = projectPoint(m:projectionMatrix, pt:(x:2.5, y:2.5))
+        isValid = true
+    }
+    
+    func readCode(_ pixelBufferBaseAddress:UnsafeRawPointer ) -> Int32 {
+        var diagonalA:[Int] = []
+        var diagonalB:[Int] = []
+        let m = self.projectionMatrix
+        var avgLum:Int = 0
+        for i in 0..<6 {
+            var pt = projectPoint(m:m , pt: (x:Double(i), y: Double(i)))
+            var rgb = readRBGFromPixelBuffer(baseAddress: pixelBufferBaseAddress, xy:pt)
+            guard rgb != nil else{
+                return 0
+            }
+            var lum = Int(rgb!.r) + Int(rgb!.g) + Int(rgb!.b)
+            avgLum += lum
+            diagonalA.append(lum)
+            pt = projectPoint(m:m , pt: (x:Double(5-i), y: Double(i)))
+            rgb = readRBGFromPixelBuffer(baseAddress: pixelBufferBaseAddress, xy:pt)
+            guard rgb != nil else{
+                return 0
+            }
+            lum = Int(rgb!.r) + Int(rgb!.g) + Int(rgb!.b)
+            avgLum += lum
+            diagonalB.append(lum)
+        }
+        avgLum = avgLum / 12
+        var diagonalValue:Int = 0
+        var reverseDiagonalValue:Int = 0
+        for i in 0..<6 {
+            diagonalA[i] = (diagonalA[i] < avgLum) ? 1 : 0
+            diagonalB[i] = (diagonalB[i] < avgLum) ? 1 : 0
+            guard diagonalA[i] != diagonalB[i] else{
+                return 0 //0 here means no chance of it working after a 180deg rotation
+            }
+            if(diagonalA[i] == 1){
+                reverseDiagonalValue = reverseDiagonalValue | (1 << i)
+                diagonalValue = diagonalValue | (1 << (5-i))
+            }
+        }
         
-        let xy = projectPoint(m:projectionMatrix, pt:(x:2.5, y:2.5))
-        centerXY = xy
+        if( VALID_CLINKCODE_DIAGONALS.contains(reverseDiagonalValue )){
+            return -1 // here -1 means it'll work if we do a 180deg rotation
+        }
+        guard VALID_CLINKCODE_DIAGONALS.contains(diagonalValue) else{
+            return 0 // no chance to work after 180deg rot
+        }
         
-        //Build projection
-        //Then use the projection see if the code is valid
-        //Then:
-        //calc center
-        //calc orientation
-        
-        //Later need to get 3D pose estimate
-        
+        var codeValue:Int32 = 0
+        var bitIndex:Int = 0
+        for x in 0..<6 {
+            for y in 0..<6 {
+                guard x != y && x != 5-y else{
+                    continue
+                }
+                let pt = projectPoint(m:m , pt: (x:Double(x), y: Double(y)))
+                let rgb = readRBGFromPixelBuffer(baseAddress: pixelBufferBaseAddress, xy:pt)
+                guard rgb != nil else{
+                    return 0
+                }
+                let lum = Int(rgb!.r) + Int(rgb!.g) + Int(rgb!.b)
+                if(lum < avgLum){
+                    codeValue = codeValue | (1 << bitIndex)
+                }
+                bitIndex = bitIndex + 1
+            }
+        }
+        let binString = String(codeValue, radix:2)
+        let hash = (simpleHash(binString) - 12) % 64
+        guard hash == diagonalValue else{
+            return 0
+        }
+        return codeValue
     }
 }
 
@@ -339,6 +424,7 @@ extension MTKViewController: MTKViewDelegate {
         print("dst",dst)
     }
     
+    
     /**
      Renders texture into the `UIViewController`'s view.
      
@@ -352,17 +438,11 @@ extension MTKViewController: MTKViewDelegate {
         CVPixelBufferLockBaseAddress(imageBuffer!,[])
         
         let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer!)
-        let width = CVPixelBufferGetWidth(imageBuffer!)
-        let height = CVPixelBufferGetHeight(imageBuffer!)
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer!)
+        //let width = CVPixelBufferGetWidth(imageBuffer!)
+        //let height = CVPixelBufferGetHeight(imageBuffer!)
+        //let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer!)
         
-        let offset = 1000
-        let r = baseAddress!.load(fromByteOffset: offset+0, as: UInt8.self)
-        let g = baseAddress!.load(fromByteOffset: offset+1, as: UInt8.self)
-        let b = baseAddress!.load(fromByteOffset: offset+2, as: UInt8.self)
-        print("rgb ",r,g,b)
-        
-        testOpenCV()
+        //testOpenCV()
         
         guard
             let currentRenderPassDescriptor = metalView.currentRenderPassDescriptor,
@@ -423,9 +503,12 @@ extension MTKViewController: MTKViewDelegate {
                 for p1 in cwPairs{
                     for p2 in ccwPairs{
                         if( p1.isCompatable(p2)){
-                            let clinkcode = ClinkCode(cwPair: p1, ccwPair: p2)
-                            hLine = Int32(clinkcode.centerXY.x)
-                            vLine = Int32(clinkcode.centerXY.y)
+                            let clinkcode = ClinkCode(cwPair: p1, ccwPair: p2, pixelBufferBaseAddress:baseAddress!)
+                            if(clinkcode.isValid){
+                                print("Found clinkcode: \(clinkcode.code)")
+                                hLine = Int32(clinkcode.centerXY.x)
+                                vLine = Int32(clinkcode.centerXY.y)
+                            }
                         }
                     }
                 }
